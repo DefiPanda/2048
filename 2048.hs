@@ -31,19 +31,6 @@ slide rows direction | direction == "left" = slide_left rows
                      | direction == "down" = rotate_left (slide_left (rotate_right rows))
                      | otherwise = rows
 
--- check if the map contains any zero
-has_zero :: [[Int]] -> Bool
-has_zero rows = foldl (\acc row -> acc || elem 0 row) False rows
-
--- check if the game is over
-game_over :: [[Int]] -> Bool
-game_over rows | has_zero rows == True = False
-               | slide rows "left" /= rows = False
-               | slide rows "right" /= rows = False
-               | slide rows "up" /= rows = False
-               | slide rows "down" /= rows = False
-               | otherwise = True
-
 -- count number of 0s in a list
 count_zeroes_in_row :: [Int] -> Int
 count_zeroes_in_row row = foldl (\acc grid -> if grid == 0 then acc + 1 else acc) 0 row
@@ -52,9 +39,13 @@ count_zeroes_in_row row = foldl (\acc grid -> if grid == 0 then acc + 1 else acc
 count_zeroes_in_rows :: [[Int]] -> Int
 count_zeroes_in_rows rows = foldl (\acc row -> acc + count_zeroes_in_row row) 0 rows
 
--- return 4 if x is 1
-two_or_four :: Int -> Int
-two_or_four x = if x == 1 then 4 else 2
+-- check if the game is over
+game_over :: [[Int]] -> Bool
+game_over rows | slide rows "left" /= rows = False
+               | slide rows "right" /= rows = False
+               | slide rows "up" /= rows = False
+               | slide rows "down" /= rows = False
+               | otherwise = True
 
 -- flatten nested list to list
 flatten_rows :: [[Int]] -> [Int]
@@ -73,6 +64,14 @@ add_tile rows num grid | count_zeroes_in_rows rows < grid = rows
                                          cell = find_nth_zero rows grid
                                          changed = take cell flat ++ [num] ++ drop (cell + 1) flat                                 
 
+-- generate a random number in range [1, range]
+randomNum :: Int -> StdGen -> Int
+randomNum range gen = fst (randomR (1, range) gen :: (Int, StdGen))
+
+-- generate insert a random number (with 10% chance of being 4 and 90% chance of being 2), and insert to a random empty cell
+new_map :: [[Int]] -> StdGen -> [[Int]]
+new_map rows gen = add_tile rows (if dice == 1 then 4 else 2) (randomNum (count_zeroes_in_rows rows) gen) where dice = randomNum 10 gen
+
 -- check whether input direction is correct
 valid_input :: [Char] -> Bool
 valid_input direction = direction == "left" || direction == "right" || direction == "up" || direction == "down"
@@ -83,26 +82,22 @@ loop rows = when (game_over rows == False)
                               (do direction <- getLine
                                   gen <- getStdGen
                                   setStdGen (snd (next gen))
-                                  let num= fst (randomR (1, 10) gen :: (Int, StdGen))
-                                  let grid = if (count_zeroes_in_rows rows > 0) then fst (randomR (1, count_zeroes_in_rows rows) gen :: (Int, StdGen)) else -1
+                                  let zeros = count_zeroes_in_rows rows
                                   let slided_rows = if (valid_input direction) then slide rows direction else rows
-                                  let added_tile_rows = if grid /= -1 && (valid_input direction) && (slided_rows /= rows) then (add_tile slided_rows (two_or_four num) grid) else slided_rows
+                                  let added_tile_rows = if zeros > 0 && (valid_input direction) && (slided_rows /= rows) then new_map slided_rows gen else slided_rows
                                   if (valid_input direction == False) then print "Please enter valid direction" else putStr ""
                                   print added_tile_rows
                                   loop added_tile_rows)
 
 -- init game and call REPL
+main :: IO ()
 main = do
     let rows = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]
     gen <- getStdGen
+    let added_one_tile = new_map rows gen
     setStdGen (snd (next gen))
-    let randNumber = fst (randomR (1, 10) gen :: (Int, StdGen))
-    let randGrid = fst (randomR (1, count_zeroes_in_rows rows) gen :: (Int, StdGen))
-    let added_one_tile = add_tile rows (two_or_four randNumber) randGrid
     gen <- getStdGen
-    let randNumber = fst (randomR (1, 10) gen :: (Int, StdGen))
-    let randGrid = fst (randomR (1, count_zeroes_in_rows added_one_tile) gen :: (Int, StdGen))
-    let added_two_tiles = add_tile added_one_tile (two_or_four randNumber) randGrid
+    let added_two_tiles = new_map added_one_tile gen
     print added_two_tiles
-    loop added_two_tiles 
+    loop added_two_tiles
     print "Game Over"
