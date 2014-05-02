@@ -79,14 +79,13 @@ valid_input direction = direction == "left" || direction == "right" || direction
 -- REPL
 loop :: [[Int]] -> IO ()
 loop rows = when (game_over rows == False)
-                              (do direction <- getLine
+                              (do putStrLn $ concat [(show row) ++ "\n"| row <- rows]
+                                  direction <- getLine
                                   gen <- getStdGen
                                   setStdGen (snd (next gen))
-                                  let zeros = count_zeroes_in_rows rows
                                   let slided_rows = if (valid_input direction) then slide rows direction else rows
-                                  let added_tile_rows = if zeros > 0 && (valid_input direction) && (slided_rows /= rows) then new_map slided_rows gen else slided_rows
-                                  if (valid_input direction == False) then print "Please enter valid direction" else putStr ""
-                                  print added_tile_rows
+                                  let added_tile_rows = if count_zeroes_in_rows rows > 0 && (valid_input direction) && (slided_rows /= rows) then new_map slided_rows gen else slided_rows
+                                  if (valid_input direction == False) then putStrLn "Please enter valid direction" else putStrLn ""
                                   loop added_tile_rows)
 
 -- init game and call REPL
@@ -97,7 +96,5 @@ main = do
     let added_one_tile = new_map rows gen
     setStdGen (snd (next gen))
     gen <- getStdGen
-    let added_two_tiles = new_map added_one_tile gen
-    print added_two_tiles
-    loop added_two_tiles
-    print "Game Over"
+    loop (new_map added_one_tile gen)
+    putStrLn "Game Over"
