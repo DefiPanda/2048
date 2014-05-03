@@ -1,6 +1,6 @@
 2048
 ====
-Copyright (c) 2014 Jack Wang  
+Copyright (c) 2014 Zhe Wang  
 Haskell clone of origin 2048 (http://gabrielecirulli.github.io/2048/) game in console.
 
 Usage

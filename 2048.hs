@@ -41,11 +41,7 @@ count_zeroes_in_rows rows = foldl (\acc row -> acc + count_zeroes_in_row row) 0 
 
 -- check if the game is over
 game_over :: [[Int]] -> Bool
-game_over rows | slide rows "left" /= rows = False
-               | slide rows "right" /= rows = False
-               | slide rows "up" /= rows = False
-               | slide rows "down" /= rows = False
-               | otherwise = True
+game_over rows = slide rows "left" == rows && slide rows "right" == rows && slide rows "up" == rows && slide rows "down" == rows
 
 -- flatten nested list to list
 flatten_rows :: [[Int]] -> [Int]
